@@ -1,0 +1,525 @@
+---
+title: 'Expanding the ERGM Framework'
+subtitle: '<text style="font-size: 120%;">Modeling Interrelated Health Outcomes with Jointly-Distributed Binary Data</text><br><br>Sunbelt 2025<br>Paris, France'
+author: 
+  - '**George G. Vega Yon**'
+  - Thomas W. Valente
+  - Jacob Kean
+  - Mary Jo Pugh
+aspectratio: 169
+bibliography: [references.bib]
+date: 2025-06-26
+html-math-method: mathjax
+format:
+  revealjs:
+    slide-number: true
+    footer: Vega Yon et al -- ggv.cl/slides/sunbelt2025 -- george.vegayon@utah.edu
+    theme: ["default", "style.scss"]
+    title-slide-attributes: 
+      data-background-image: 'https://brand.utah.edu/wp-content/uploads/sites/69/2024/12/2024_ZoomBKG-9.jpg'
+      data-background-opacity: '0.2'
+      data-background-size: 'contain'
+    fig-align: center
+    embed-resources: true
+    mermaid-format: png
+---
+
+## Motivation
+
+<!-- Mathematical functions -->
+
+\newcommand{\sufstats}[1]{s\left(#1\right)}
+\renewcommand{\exp}[1]{\mbox{exp}\left\{ {#1} \right\}}
+\renewcommand{\log}[1]{\mbox{log}\left\{ {#1} \right\}}
+\newcommand{\transpose}[1]{{#1}^\mathbf{t}}
+\renewcommand{\t}[1]{\transpose{#1}}
+\newcommand{\s}[1]{\sufstats{#1}}
+\newcommand{\SUFF}{\mathcal{S}}
+\newcommand{\Suff}{\mathbf{S}}
+\newcommand{\suff}{\mathbf{s}}
+\newcommand{\coef}{\boldsymbol{\theta}}
+\newcommand{\weight}{\mathbf{w}}
+\newcommand{\Weight}{\mathbf{W}}
+
+\renewcommand{\Pr}[2]{{\mathbb{P}_{#1}\left(#2\right) }}
+
+<!-- Objects -->
+
+\newcommand{\Graph}{\mathbf{G}}
+\newcommand{\graph}{\mathbf{g}}
+\newcommand{\GRAPH}{\mathcal{G}}
+\newcommand{\Adjmat}{Y}
+\newcommand{\adjmat}{y}
+\newcommand{\ADJMAT}{\mathcal{Y}}
+\newcommand{\INDEPVAR}{\mathcal{X}}
+\newcommand{\Indepvar}{X}
+\newcommand{\indepvar}{x}
+
+\newcommand{\normconst}[1]{\kappa\left(#1\right)}
+
+\newcommand{\isone}[1]{{\boldsymbol{1}\left( #1 \right)}}
+\newcommand{\f}[1]{{f\left(#1\right) }}
+\newcommand{\Prcond}[3]{\Pr{#1}{\left.#2 \vphantom{#3}\;\right|\vphantom{#2}#3}}
+\newcommand{\fcond}[2]{{f\left(#1|#2\right) }}
+\newcommand{\Expected}[1]{{\mathbb{E}\left\{#1\right\}}}
+\newcommand{\ExpectedCond}[2]{{\mathbb{E}\left\{#1{\vphantom  {#2}}\right|\left.{\vphantom  {#1}}#2\right\}}}
+\renewcommand{\exp}[1]{\mbox{exp}\left\{#1\right\}}
+
+\newcommand{\Likelihood}[2]{\text{L}\left(#1 \left|{\vphantom  {#1}}#2\right.\right)}
+
+\newcommand{\loglik}[1]{l\left(#1\right)}
+\newcommand{\logit}[1]{\mbox{logit}\left(#1\right)}
+\newcommand{\logitinv}[1]{\mbox{Logit}^{-1}\left(#1\right)}
+
+<!-- Mathematical Annotation ------------------------------- -->
+
+\newcommand{\pgraph}{\mathbf{x}}
+\newcommand{\snamed}[2]{\s{#1}_{\mbox{#2}}}
+
+<!-- Math operators -->
+
+\newcommand{\tp}[1]{{#1}^{\mathbf{t}}}
+
+<!-- Vector of binary outcomes -->
+
+\newcommand{\y}[1]{y_{{#1}}}
+\newcommand{\Yvec}[1]{\mathbf{Y_{#1}}}
+\newcommand{\yvec}[1]{\mathbf{\y{#1}}}
+\newcommand{\ycal}[1]{\left\{0, 1\right\}^{#1}}
+\newcommand{\ycaltwo}[1]{\mathcal{Y}}
+
+<!-- Sufficient statistic -->
+
+\newcommand{\sstat}[1]{s\left(#1\right)}
+
+<!-- Change statistic -->
+
+\newcommand{\chng}[1]{\delta\left(\y{#1}:0\to1\right)}
+
+\newcommand{\linevec}[2]{\left(\begin{array}{ccc}#1&#2\end{array}\right)}
+
+\renewcommand{\exp}[1]{\mbox{exp}\left\{#1\right\}}
+
+
+
+::: {.columns}
+::: {.column width="55%"}
+::: incremental
+-   We are running a study with multiple 0/1 outcomes, e.g., person $i$ in time $t$
+
+    $$
+      \left(\mbox{tobacco}, \mbox{alcohol}, \mbox{marijuana}\right)_{it} = \left(0, 1, 0\right)
+      $$
+
+-   We want to understand the factors that influence prevalence.
+
+-   And the outcomes may not be independent.
+
+-   Some approaches to model this type of data exists (*e.g.*, SEM, multivariate regression, etc.) Here we leverage ERGMs!
+:::
+:::
+
+::: {.column width="40%"}
+![](fig/no-dag-example.svg)
+:::
+:::
+
+## Types of questions
+
+While modeling outcomes jointly, we can ask questions such as:
+
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Representation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="fragment">
+<td>How prevalent is the co-occurrence?</td>
+<td>$\{A_i, B_i\}$</td>
+</tr>
+<tr class="fragment">
+<td>Same as above, but for females?</td>
+<td>$\{A_i, B_i\} \times female_i$</td>
+</tr>
+<tr class="fragment">
+<td>How common is the transition?</td>
+<td>$\{A_{i,t}, \text{not }B_{i,t}\} \to \{A_{i,t + 1}, B_{i, t + 1}\}$</td>
+</tr>
+<tr class="fragment">
+<td>What about reversing?</td>
+<td>$\{A_{i,t}, B_{i,t}\} \to \{A_{i,t + 1},\text{not }B_{i, t + 1}\} \to \{A_{i,t + 2}, B_{i,t + 2}\}$</td>
+</tr>
+</tbody>
+</table>
+
+
+# Definitions {background-color="#890000"}
+
+## Exponential Random Graph Models \[ERGMs\]
+
+::: {.incremental style="font-size: 90%;"}
+- The ERGM framework^[@Holland1981; @Frank1986; @Wasserman1996; @Snijders2006; @Robins2007; and many more] has been used for a variety of applications.
+
+- *Multiple* ERGM extensions and other advances in modeling entities jointly exist. A few to highlight:
+
+  -   Generalized Location Systems \[GLS\]^[@buttsModelsGeneralizedLocation2007.].
+  -   Auto-logistic Actor Attribute Models \[ALAAM\]^[@robinsNetworkModelsSocial2001b; @parkerNewNetworkModels2022; see also @almquistLogisticNetworkRegression2014.].
+  -   Exponential-family Random Network Models \[ERNMs\]^[@wangUnderstandingNetworksExponentialfamily2023; @fellowsExponentialFamilyRandom2012; @fellowsExponentialfamilyRandomNetwork2012].
+
+- Our work is yet another extension: A bipartite network model where we map individuals to *multiple* outcomes.
+:::
+
+## ERGMs (cont.)
+
+In case you missed them from earlier talks 🤭
+
+::: {style="text-align: center;"}
+![](fig/parts-of-ergm.svg){width="80%" fig-alt="A diagram showing the parts of an ERGM."}
+:::
+
+## Data structure
+
+For each individual $i$, with $T$ time points and $K$ outcomes, we have a data structure that looks like this:
+
+\newcommand{\tilt}[1]{\text{\small\begin{rotate}{45}{#1}\end{rotate}}}
+
+::::: {layout-ncol="2" style="font-size: 90%;"}
+::: {.column .fragment}
+**(A) Data structure** $T$ time points and $K$ outcomes
+
+$$
+\begin{aligned}
+  & \qquad\mbox{Outcomes }\rightarrow \\
+    \mbox{Time }\downarrow & \left[\begin{array}{cccc}
+      y_{i,1,1} & y_{i,1,2} & \dots & y_{i,1,K}  \\
+      y_{i,2,1} & y_{i,2,2} & \dots & y_{i,2,K} \\
+      \vdots & \vdots & \ddots & \vdots \\
+      y_{i,T,1} & y_{i,T,2} & \dots & y_{i,T,K}
+    \end{array}\right]
+\end{aligned}
+$$
+
+Each row represents a time point, and each column a particular outcome.
+:::
+
+::: {.column .fragment}
+**(B) Example with three outcomes and two time points**
+
+$$
+\begin{aligned}
+    \begin{array}{r}
+      t = 1 \\
+      t = 2 
+    \end{array}
+    & \left[\begin{array}{ccc}
+      \text{Alcohol} & \text{Tobacco}  & \text{Marijuana} \\
+      0 & 1 & 0  \\
+      1 & 1 & 0 
+    \end{array}\right]
+\end{aligned}
+$$
+
+This case represents the transition from only consuming tobacco to consuming tobacco and alcohol.
+:::
+:::::
+
+## Data structure (bis)
+
+::: {style="text-align: center;"}
+::: {.fragment .fade-in-then-out .absolute width="100%"}
+![](fig/bipartite-diagram-1.svg)
+:::
+
+::: {.fragment .fade-in-then-out .absolute width="100%"}
+![](fig/bipartite-diagram-2.svg)
+:::
+
+::: {.fragment .fade-in .absolute width="100%"}
+![](fig/bipartite-diagram-3.svg)
+:::
+:::
+
+::: {.fragment .absolute top="400px" width="100%"}
+
+The full likelihood of the model is given by:
+
+$$
+\Pr{\ycaltwo{}}{\Yvec{} = \yvec{};\theta} = \left[\prod_{i,t>1}%
+\overbrace{\exp{\sstat{\yvec{i,t}}} \times \normconst{\coef}^{-1}}^{\text{
+Individual probability for } t>1}\right]\times \left[\prod_{i}%
+\overbrace{\Pr{\ycaltwo{}}{\yvec{i,1};\coef}}^\text{Baseline prevalence}
+\right]
+$$
+::: 
+
+# Implementation {background-color="#890000"}
+
+## The `defm` R package 
+
+::::: columns
+::: {.column .incremental width="55%"}
+-   **defm**: Discrete Exponential-Family Models.
+-   Part of [**barry**](https://github.com/USCbiostats/barry){target="_blank"} (your C++ motif accountant).
+-   Like in @VegaYon2021, uses MLE to fit the model.
+-   **barry** was optimized to fit pooled models (sna and even genetics!).
+-   Used in models featuring up to 30 entries (*e.g.*, 15 outcomes in 2 time points) in the adjacency matrix (about 1,000,000,000 combinations).
+:::
+
+::: {.column width="40%"}
+![](fig/ergm-computing.svg){width="100%"}
+:::
+:::::
+
+## Example 
+
+The following example uses data from the SNS study [@Valente2013]
+
+::: {.columns style="font-size: 70%;"}
+
+::: {.column width="40%" .fragment}
+```{r}
+#| label: example
+#| echo: true
+#| output-location: fragment
+# Loading the package and the data
+library(defm)
+data(valentesnsList)
+
+# Reading the data
+mymodel <- with(
+  valentesnsList,
+  new_defm(id = id, Y = Y, X = X, order = 1)
+) |>
+  term_defm_logit_intercept(idx = 'exposure_drink', coords = 0) |>
+  term_defm_logit_intercept(idx = 'exposure_smoke', coords = 1) |>
+  term_defm_logit_intercept(idx = 'exposure_mj', coords = 2) +
+  "{y0}" + "{y1}" + "{y2}" +
+  "{y1, 0y2} > {y1, y2}"
+
+# Initializing the model (and printing)
+init_defm(mymodel, FALSE) |>
+  print()
+```
+:::
+
+
+::: {.column width="58%" .fragment}
+```{r}
+#| label: example-fit
+#| echo: false
+#| output: asis
+#| output-location: fragment
+# Fitting and summarizing the model
+library(texreg)
+mymodel |>
+  defm_mle() |>
+  summary_table(as_texreg = TRUE) |>
+  htmlreg(single.row = TRUE) 
+```
+:::
+
+:::
+
+# Health conditions in Military Servicemembers {background-color="#890000"}
+
+::: {.callout-caution title="<text style='color: black'>Caution</text>"}
+The original dataset has been modified by randomly swapping outcome names to protect the privacy of the participants. **No conclusions should be drawn from these analyses**.
+::: 
+
+## Data {style="font-size: 80%;"}
+
+::: {.columns}
+::: {.column width="60%"}
+- A subset of the study (553 participants), which includes reports on a large number of health conditions from a large sample US servicemembers.
+
+- For this example, we selected five health conditions: dizziness, headache, sleep problems, anxiety, and depression:
+
+- This is an ideal scenario, as it is unlikely servicemembers know each other (independence between individuals).
+:::
+
+::: {.column width="40%"}
+| Reported condition |   0|    1|
+|:--------------|---:|----:|
+|Dizziness  |  77| 1138|
+|Headache   | 235|  980|
+|Sleep problems |  69| 1146|
+|Anxiety    | 312|  903|
+|Depression | 115| 1100|
+:::
+:::
+
+
+::: {.callout-caution title="<text style='color: black'>Caution</text>" style="font-size: 60%;"}
+The original dataset has been modified by randomly swapping outcome names to protect the privacy of the participants. **No conclusions should be drawn from these analyses**.
+:::
+
+## Model fitting
+
+A combination of functions and special syntax
+
+::: {.columns}
+
+::: {.column width="50%" .fragment}
+
+*Cross-sectional model*
+
+```r
+# Logit intercepts
+model |>
+  term_defm_logit_intercept() |>
+  term_defm_logit_intercept(idx = "hispanic") |>
+  term_defm_logit_intercept(idx = "site_cpen", coords = (0))
+
+# Co-occurrence motifs
+model +
+  "{y0, y1}" +
+  "{y0, y2}" +
+  "{y0, y4}" +
+  "{y2, y3}" +
+  "{y3, y4}"
+```
+:::
+::: {.column width="50%" .fragment}
+
+*Panel model*
+
+```r
+# Logit intercepts
+model |>
+  term_defm_logit_intercept() |>
+  term_defm_logit_intercept(idx = "age_yrs", coords = c(4)) |>  
+  term_defm_logit_intercept(idx = "hispanic", coords = c(1))
+
+# Co-occurrence motifs
+model +
+  "{y0, y1}" +
+  "{y1, y2}" +
+  "{y1, y3}" +
+  "{y2, y4}" +
+  "{y3, y4}"
+
+# Transition motifs
+model +
+  "{y0, 0y3} > {y0, y3}" +
+  "{y1, 0y3} > {y1, y3}" +
+  "{0y3, y4} > {y3, y4}" 
+```
+:::
+:::
+
+## Preliminary results[^caution]
+
+[^caution]: <text style="font-size: 60%"> The original dataset has been modified by randomly swapping outcome names to protect the privacy of the participants. **No conclusions should be drawn from these analyses**.</text>
+
+
+::: {style="font-size: 80%;"}
+
+```
+                                                     Cross sectional     Panel             
+-------------------------------------------------------------------------------------------
+Logit terms                                                                                
+    depression x age_yrs                                0.45 (0.14) **      0.44 (0.20) *  
+    headache x hispanic                                 0.58 (0.23) *       0.74 (0.33) *  
+Co-ocurrence                                                                               
+    {dizziness⁺, headache⁺}                             2.47 (0.29) ***     2.76 (0.42) ***
+    {headache⁺, sleep_prob⁺}                            1.11 (0.27) ***     1.22 (0.36) ***
+    {headache⁺, anxiety⁺}                               0.79 (0.16) ***     1.12 (0.22) ***
+    {sleep_prob⁺, depression⁺}                          2.08 (0.29) ***     1.99 (0.39) ***
+    {anxiety⁺, depression⁺}                             2.36 (0.25) ***     2.67 (0.34) ***
+Transition (rare in this dataset)           
+    {dizziness⁺, anxiety⁻}⇨{dizziness⁺, anxiety⁺}                          -3.26 (0.40) ***
+    {headache⁺, anxiety⁻}⇨{headache⁺, anxiety⁺}                            -0.03 (0.45)    
+    {anxiety⁻, depression⁺}⇨{anxiety⁺, depression⁺}                        -2.01 (0.39) ***
+-------------------------------------------------------------------------------------------
+AIC                                                  3655.00             1643.41           
+BIC                                                  3714.86             1708.93           
+N                                                    1084                 583              
+===========================================================================================
+*** p < 0.001; ** p < 0.01; * p < 0.05
+```
+:::
+
+::: {.incremental style="font-size: 80%;"}
+- "Enrollment age" and "hispanic" predict depression and headache, respectively.
+- There is evicende of co-occurrence between some outcomes.
+- Anxiety following dizziness is less likely.
+- No evidence of headache leading to anxiety.
+- Anxiety following previous depression is less likely.
+:::
+
+
+## Discussion
+
+::: {.incremental style="font-size: 90%;"}
+*Today*
+
+- We use **bipartite ERGMs** to model multiple health outcomes jointly.
+- We **assume idependence between individuals** (so no suitable for data known to be correlated, like health behaviors!).
+- The model is available in the `defm` R package <https://github.com/UofUEpiBio/defm>{target="_blank"}. 
+- We demonstrated the model using data from the SNS study [@Valente2013] and a (jittered) dataset of US servicemembers' health conditions.
+:::
+
+::: {.fragment .incremental  style="font-size: 90%;"}
+*Next steps*
+
+- Investiage the behavior using simulation studies.
+- (Re-)release the package on CRAN.
+- (in the future) use modern ERGM approaches to exit MLE.
+- Explore how other ERGM extensions and related models can be used in this context.
+:::
+
+---
+
+### Thanks!
+
+<!-- Repeating the title and authors centered -->
+<div style="text-align: center;">
+  <h2>Expanding the ERGM Framework</h2>
+  <h3>Modeling Interrelated Health Outcomes with Jointly-Distributed Binary Data</h3>
+  <p><strong>George G. Vega Yon</strong>, Thomas W. Valente, Jacob Kean, Mary Jo Pugh</p>
+</div>
+
+::: {style="text-align: center;"}
+**{{< fa solid envelope >}} george.vegayon\@utah.edu**
+
+[{{< fa solid globe >}} **https://ggv.cl**](https://ggvy.cl){target="_blank"}
+
+[{{< fa brands bluesky >}} \@gvegayon.bsky.social](https://bsky.app/profile/gvegayon.bsky.social){target="_blank"}
+
+[{{< fa brands github >}} \@gvegayon](https://github.com/gvegayon){target="_blank"}
+:::
+
+# Appendix {appendix="true" background-color="#890000"}
+
+## References
+
+::: {#refs}
+:::
+
+## The core idea
+
+[ $$
+\left.\begin{array}{rl}
+L(\boldsymbol{\theta}_1)  = & \mbox{Logit}^{-1}\left(\boldsymbol{\theta}_1 s\left(y_1\right)\right) \\
+L(\boldsymbol{\theta}_2)  = & \mbox{Logit}^{-1}\left(\boldsymbol{\theta}_2 s\left(y_2\right)\right) \\
+& \dots \\
+L(\boldsymbol{\theta}_K)  = & \mbox{Logit}^{-1}\left(\boldsymbol{\theta}_K s\left(y_K\right)\right)
+\end{array}\right\}\mapsto %
+\begin{array}{rl}
+L(\boldsymbol{\theta}_1, \boldsymbol{\theta}_2, \dots, \boldsymbol{\theta}_k, \boldsymbol{\theta}_M) & = \\ %
+& \hspace{-3cm}\mbox{exp}\left\{\sum_k \boldsymbol{\theta}_k s\left(y_k\right) + \boldsymbol{\theta}_J s\left(y_1,\dots, y_K\right)\right\}\times\kappa\left(\boldsymbol{\theta}\right)^{-1}, \\
+\\
+\mbox{where }\boldsymbol{\theta}& =  \left[\boldsymbol{\theta}_1, \dots, \boldsymbol{\theta}_K, \boldsymbol{\theta}_M\right]
+\end{array}
+$$ ]{style="font-size:80%;"}
+
+-   The DEFMs are very close to the logistic regression.
+
+-   The only difference is the inclusion of terms that involve two or more outcomes, <em>e.g.</em>, an interaction effect.
+
+-   The right-hand side of the diagram shows how a set of independent Logistic models can be combined and extended by incorporating $s(\cdot)$.
+
+-   Moreover, if none of the sufficient statistics features more than one outcome, then the model is reduced to a logistic regression.

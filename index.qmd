@@ -160,13 +160,13 @@ While modeling outcomes jointly, we can ask questions such as:
 
 ## Exponential Random Graph Models \[ERGMs\]
 
-::: {.incremental style="font-size: 90%;"}
+::: {.incremental style="font-size: 85%;"}
 - The ERGM framework^[@Holland1981; @Frank1986; @Wasserman1996; @Snijders2006; @Robins2007; and many more] has been used for a variety of applications.
 
 - *Multiple* ERGM extensions and other advances in modeling entities jointly exist. A few to highlight:
 
   -   Generalized Location Systems \[GLS\]^[@buttsModelsGeneralizedLocation2007.].
-  -   Auto-logistic Actor Attribute Models \[ALAAM\]^[@robinsNetworkModelsSocial2001b; @parkerNewNetworkModels2022; see also @almquistLogisticNetworkRegression2014.].
+  -  (multivariate)<sup>5</sup> Auto-logistic Actor Attribute Models \[ALAAM\]^[@robinsNetworkModelsSocial2001b; @parkerNewNetworkModels2022; see also @almquistLogisticNetworkRegression2014.].
   -   Exponential-family Random Network Models \[ERNMs\]^[@wangUnderstandingNetworksExponentialfamily2023; @fellowsExponentialFamilyRandom2012; @fellowsExponentialfamilyRandomNetwork2012].
 
   - Latent models Gollini and Caimo (Sunbelt 2025).[^sunbelt2025]

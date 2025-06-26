@@ -18,7 +18,7 @@ format:
     title-slide-attributes: 
       data-background-image: 'https://brand.utah.edu/wp-content/uploads/sites/69/2024/12/2024_ZoomBKG-9.jpg'
       data-background-opacity: '0.2'
-      data-background-size: 'contain'
+      data-background-size: 'cover'
     fig-align: center
     embed-resources: true
     mermaid-format: png
@@ -156,7 +156,7 @@ While modeling outcomes jointly, we can ask questions such as:
 </table>
 
 
-# Definitions {background-color="#890000"}
+# Background {background-color="#890000"}
 
 ## Exponential Random Graph Models \[ERGMs\]
 
@@ -168,6 +168,10 @@ While modeling outcomes jointly, we can ask questions such as:
   -   Generalized Location Systems \[GLS\]^[@buttsModelsGeneralizedLocation2007.].
   -   Auto-logistic Actor Attribute Models \[ALAAM\]^[@robinsNetworkModelsSocial2001b; @parkerNewNetworkModels2022; see also @almquistLogisticNetworkRegression2014.].
   -   Exponential-family Random Network Models \[ERNMs\]^[@wangUnderstandingNetworksExponentialfamily2023; @fellowsExponentialFamilyRandom2012; @fellowsExponentialfamilyRandomNetwork2012].
+
+  - Latent models Gollini and Caimo (Sunbelt 2025).[^sunbelt2025]
+  
+  [^sunbelt2025]: One of the benefits of presenting later during the conference.
 
 - Our work is yet another extension: A bipartite network model where we map individuals to *multiple* outcomes.
 :::
@@ -242,9 +246,9 @@ This case represents the transition from only consuming tobacco to consuming tob
 :::
 :::
 
-::: {.fragment .absolute top="400px" width="100%"}
+::: {.fragment .absolute top="400px" width="100%" style="font-size: 80%;"}
 
-The full likelihood of the model is given by:
+The full likelihood of the model (multilevel/pooled ERGM) is given by:
 
 $$
 \Pr{\ycaltwo{}}{\Yvec{} = \yvec{};\theta} = \left[\prod_{i,t>1}%
@@ -253,6 +257,7 @@ Individual probability for } t>1}\right]\times \left[\prod_{i}%
 \overbrace{\Pr{\ycaltwo{}}{\yvec{i,1};\coef}}^\text{Baseline prevalence}
 \right]
 $$
+
 ::: 
 
 # Implementation {background-color="#890000"}
@@ -277,7 +282,7 @@ $$
 
 The following example uses data from the SNS study [@Valente2013]
 
-::: {.columns style="font-size: 70%;"}
+::: {.columns style="font-size: 90%;"}
 
 ::: {.column width="40%" .fragment}
 ```{r}
@@ -298,20 +303,35 @@ mymodel <- with(
   term_defm_logit_intercept(idx = 'exposure_mj', coords = 2) +
   "{y0}" + "{y1}" + "{y2}" +
   "{y1, 0y2} > {y1, y2}"
+```
+:::
 
+::: {.column width="50%" .fragment}
+```{r}
 # Initializing the model (and printing)
 init_defm(mymodel, FALSE) |>
   print()
 ```
 :::
 
+:::
 
-::: {.column width="58%" .fragment}
+## Example (cont.)
+
+::: {.columns}
+
+::: {.column width="40%" .incremental}
+- The Logit intercepts are specific to individual outcomes.
+- Without motifs, the model reduces to a set of independent logistic regressions.
+- In this example, we are using longitudinal data, so we can use the transition motifs.
+:::
+
+::: {.column width="60%" style="font-size: 70%;"}
+
 ```{r}
 #| label: example-fit
 #| echo: false
 #| output: asis
-#| output-location: fragment
 # Fitting and summarizing the model
 library(texreg)
 mymodel |>
@@ -319,9 +339,10 @@ mymodel |>
   summary_table(as_texreg = TRUE) |>
   htmlreg(single.row = TRUE) 
 ```
-:::
 
 :::
+:::
+
 
 # Health conditions in Military Servicemembers {background-color="#890000"}
 
@@ -457,7 +478,7 @@ N                                                    1084                 583
 *Today*
 
 - We use **bipartite ERGMs** to model multiple health outcomes jointly.
-- We **assume idependence between individuals** (so no suitable for data known to be correlated, like health behaviors!).
+- We **assume idependence between individuals** (so no suitable for data known to be correlated, like health behaviors!) (multilevel/pooled model).
 - The model is available in the `defm` R package <https://github.com/UofUEpiBio/defm>{target="_blank"}. 
 - We demonstrated the model using data from the SNS study [@Valente2013] and a (jittered) dataset of US servicemembers' health conditions.
 :::
@@ -467,8 +488,7 @@ N                                                    1084                 583
 
 - Investiage the behavior using simulation studies.
 - (Re-)release the package on CRAN.
-- (in the future) use modern ERGM approaches to exit MLE.
-- Explore how other ERGM extensions and related models can be used in this context.
+- Relax the independence assumption (go for a proper ERGM!), *i.e.*, like in ALAAMs.
 :::
 
 ---
